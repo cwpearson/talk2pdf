@@ -29,7 +29,7 @@ This will generate a PDF in the current directory:
 With a youtube video
 ```
 pipenv shell
-pip install -r requirements/dev.txt
+pip install -r requirements/prod.txt
 
 export OPENAPI_SECRET=sk-...
 python talk2pdf <youtube-url>
@@ -38,7 +38,7 @@ python talk2pdf <youtube-url>
 Or, with an existing video file
 ```
 pipenv shell
-pip install -r requirements/dev.txt
+pip install -r requirements/prod.txt
 
 export OPENAPI_SECRET=sk-...
 python talk2pdf <video-file>
