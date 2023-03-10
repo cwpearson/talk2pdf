@@ -32,7 +32,7 @@ pipenv shell
 pip install -r requirements/prod.txt
 
 export OPENAPI_SECRET=sk-...
-python talk2pdf <youtube-url>
+python talk2pdf/py <youtube-url>
 ```
 
 Or, with an existing video file
@@ -41,12 +41,12 @@ pipenv shell
 pip install -r requirements/prod.txt
 
 export OPENAPI_SECRET=sk-...
-python talk2pdf <video-file>
+python talk2pdf/py <video-file>
 ```
 
 ## Configuration
 
-`talk2pdf` looks in `TALK2PDF_CONFIG_DIR`, then `XDG_CONFIG_HOME/talk2pdf`, and finally `$HOME/.config/talk2pdf` for a `config.json` file.
+`talk2pdf.py` looks in `TALK2PDF_CONFIG_DIR`, then `XDG_CONFIG_HOME/talk2pdf`, and finally `$HOME/.config/talk2pdf` for a `config.json` file.
 You can put your OpenAI key in there instead of setting it in the environment
 
 ```json
@@ -55,7 +55,7 @@ You can put your OpenAI key in there instead of setting it in the environment
 }
 ```
 
-`talk2pdf` uses `TALK2PDF_CACHE_DIR`, or `XDG_CACHE_HOME/talk2pdf`, or finally `$HOME/.cache/talk2pdf` as a cache directory.
+`talk2pdf.py` uses `TALK2PDF_CACHE_DIR`, or `XDG_CACHE_HOME/talk2pdf`, or finally `$HOME/.cache/talk2pdf` as a cache directory.
 This is where intermediate files are stored.
 
 
