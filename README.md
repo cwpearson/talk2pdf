@@ -27,7 +27,7 @@ apt-get install ffmpeg yt-dlp
 This will generate a PDF in the current directory:
 
 With a youtube video
-```
+```bash
 pipenv shell
 pip install -r requirements/prod.txt
 
@@ -36,7 +36,7 @@ python talk2pdf/py <youtube-url>
 ```
 
 Or, with an existing video file
-```
+```bash
 pipenv shell
 pip install -r requirements/prod.txt
 
