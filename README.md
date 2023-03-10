@@ -21,6 +21,9 @@ apt-get install ffmpeg yt-dlp
 
 ## Running
 
+> **Warning**
+> This will cost ~$0.50 / hr of video
+
 This will generate a PDF in the current directory:
 
 With a youtube video
