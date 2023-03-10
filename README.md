@@ -32,7 +32,7 @@ pipenv shell
 pip install -r requirements/prod.txt
 
 export OPENAPI_SECRET=sk-...
-python talk2pdf/py <youtube-url>
+python talk2pdf.py <youtube-url>
 ```
 
 Or, with an existing video file
@@ -41,7 +41,7 @@ pipenv shell
 pip install -r requirements/prod.txt
 
 export OPENAPI_SECRET=sk-...
-python talk2pdf/py <video-file>
+python talk2pdf.py <video-file>
 ```
 
 ## Configuration
