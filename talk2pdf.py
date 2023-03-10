@@ -293,12 +293,12 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
         prog="talk2pdf",
-        description="",
-        epilog=""
+        description="Convert recorded talks to PDFs",
+        epilog="By Carl Pearson -- https://github.com/cwpearson/talk2pdf"
     )
 
-    parser.add_argument('URI')
-    parser.add_argument('-t', '--title')
+    parser.add_argument('URI', help="A video file or URL")
+    parser.add_argument('-t', '--title', help="The title to use in the output PDF")
 
     args = parser.parse_args()
 

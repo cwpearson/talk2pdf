@@ -3,6 +3,9 @@ import hashlib
 
 import utils
 
+def is_available():
+    cp = subprocess.run(["yt-dlp", "--help"], capture_output=True)
+    return cp.returncode == 0
 
 def get_title(url):
     utils.eprint(f"==== get title for {url}...")
@@ -32,3 +35,11 @@ def download(url, work_dir):
 
     for f in work_dir.glob(f"{digest}.*"):
         return f
+
+_available = False
+try:
+    _available = is_available()
+except:
+    pass
+if not _available:
+    raise RuntimeError("please make sure yt-dlp is in your path")

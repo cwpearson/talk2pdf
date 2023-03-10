@@ -3,6 +3,9 @@ import hashlib
 
 import utils
 
+def is_available():
+    cp = subprocess.run(["ffmpeg", "--help"], capture_output=True)
+    return cp.returncode == 0
 
 def extract_frame(output_dir, video_path, when_seconds):
     hh, when_seconds = divmod(when_seconds, 3600)
@@ -74,3 +77,12 @@ def extract_audio(output_path, video_path):
         utils.eprint(cp.stdout)
         utils.eprint(cp.stderr)
         raise RuntimeError("failed to extract audio")
+
+
+_available = False
+try:
+    _available = is_available()
+except:
+    pass
+if not _available:
+    raise RuntimeError("please make sure ffmpeg is in your path")
