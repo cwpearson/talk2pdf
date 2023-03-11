@@ -13,7 +13,7 @@ dependencies = [
   "pillow",
 ]
 name = "talk2pdf"
-version = "0.2.1"
+version = "0.2.2"
 
 classifiers = [
   "Programming Language :: Python :: 3",
