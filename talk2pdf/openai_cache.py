@@ -75,6 +75,7 @@ def clean(text):
     else:
         utils.eprint(
             f"==== {cached_response_path} did not exist. Submitting to OpenAI...")
+        openai.api_key = api_key
         response = openai.ChatCompletion.create(
             model=model,
             messages=messages,
