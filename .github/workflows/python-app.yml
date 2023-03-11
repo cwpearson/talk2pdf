@@ -27,8 +27,8 @@ jobs:
       run: |
         sudo apt-get install -y --no-install-recommends ffmpeg yt-dlp
         python -m pip install --upgrade pip
-        pip install -r requirements/prod.txt
+        pip install --editable .
     - name: Print usage
       run: |
         export OPENAPI_SECRET="sk-..."
-        python talk2pdf.py --help
+        python -m talk2pdf --help
