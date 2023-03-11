@@ -5,7 +5,6 @@ from pathlib import Path
 from collections import namedtuple
 import argparse
 
-import openai
 from pydub import AudioSegment, silence
 
 import talk2pdf.utils as utils
@@ -15,7 +14,6 @@ import talk2pdf.ffmpeg as ffmpeg
 import talk2pdf.ytdlp as ytdlp
 
 
-openai.api_key = config.openapi_secret()
 TODAY_STRING = datetime.today().strftime('%b %d, %Y')
 CHATGPT_MAX_STRING_LEN = 3000
 OPENAI_AUDIO_LIMIT_BYTES = 1024 * 1024 * 25
