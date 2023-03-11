@@ -11,7 +11,7 @@ talk2pdf converts videos of talks into a PDF with the transcript and associated 
 talk2pdf uses OpenAI's APIs -- you will need an OpenAI API key.
 
 > **Note**
-> talk2pdf ONLY uses your API key to make OpenAPI calls. It is not otherwise used, stored, or transmitted.
+> Your API key is ONLY to make OpenAPI calls.
 
 1. Create an OpenAI account
 2. Go to [platform.openai.com](https://platform.openai.com)
