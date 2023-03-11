@@ -1,16 +1,23 @@
 # talk2pdf
 
+talk2pdf converts videos of talks into a PDF with the transcript and associated screenshots.
+
 ## Prerequisites
 
-You will need an OpenAI API key.
-1. Create an account
+talk2pdf uses OpenAI's APIs -- you will need an OpenAI API key.
+
+> **Note**
+> talk2pdf ONLY uses your API key to make OpenAPI calls. It is not otherwise used, stored, or transmitted.
+
+1. Create an OpenAI account
 2. Go to [platform.openai.com](https://platform.openai.com)
-    1. Click on your account inthe top right
+    1. Click on your account in the top right
     2. Click View API Keys
     3. Click "Create new secret key"
     4. You will need to provide this API key to talk2pdf (see below)
 
-You will need some software in your path:
+`talk2pdf` uses FFmpeg for video/audio operations and yt-dlp to download video from online streaming services.
+
 ```
 brew install ffmpeg yt-dlp
 ```
