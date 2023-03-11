@@ -2,6 +2,10 @@
 
 talk2pdf converts videos of talks into a PDF with the transcript and associated screenshots.
 
+| Video | Result | 
+|-------|--------|
+|![](/static/youtube.png) | ![](/static/result.png) |
+
 ## Prerequisites
 
 talk2pdf uses OpenAI's APIs -- you will need an OpenAI API key.
