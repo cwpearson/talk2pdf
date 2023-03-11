@@ -1,3 +1,6 @@
 *.webm
 *.md
 *.pdf
+dist
+*.egg-info
+**/.DS_Store

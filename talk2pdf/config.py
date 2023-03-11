@@ -1,8 +1,9 @@
 import os
 from pathlib import Path
 import json
+import sys
 
-import utils
+import talk2pdf.utils as utils
 
 
 def config_dir():

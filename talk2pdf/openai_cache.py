@@ -1,10 +1,12 @@
-import openai
-
-import config
-import utils
 import hashlib
 import json
 import sys
+
+import openai
+
+import talk2pdf.config as config
+import talk2pdf.utils as utils
+
 
 def transcribe(path):
 
@@ -27,14 +29,16 @@ def transcribe(path):
 
     # reach cached reponse, or cache a new response
     if cached_response_path.is_file():
-        utils.eprint(f"==== retrieving cached response from {cached_response_path}")
+        utils.eprint(
+            f"==== retrieving cached response from {cached_response_path}")
         with open(cached_response_path, 'r') as f:
             transcript = json.loads(f.read())
     else:
         utils.eprint(f"==== open {path} for transcription...")
         with open(path, 'rb') as f:
             openai.api_key = api_key
-            transcript = openai.Audio.translate(model, f, response_format=response_format)
+            transcript = openai.Audio.translate(
+                model, f, response_format=response_format)
         utils.eprint(f"==== caching response @ {cached_response_path}")
         config.cache_dir().mkdir(parents=True, exist_ok=True)
         with open(cached_response_path, 'w') as f:
@@ -43,11 +47,12 @@ def transcribe(path):
     # return the result
     return transcript
 
+
 def clean(text):
 
     api_key = config.openapi_secret()
-    model="gpt-3.5-turbo"
-    messages=[
+    model = "gpt-3.5-turbo"
+    messages = [
         {"role": "system", "content": "You split text into paragraphs."},
         {"role": "user", "content": f"Split the following text into paragraphs; DO NOT REMOVE TEXT, DO NOT LABEL PARAGRAPHS:\n{text}"}
     ]
@@ -63,11 +68,13 @@ def clean(text):
     cached_response_path = config.cache_dir() / f"{digest}.json"
 
     if cached_response_path.is_file():
-        utils.eprint(f"==== retrieving cached response from {cached_response_path}")
+        utils.eprint(
+            f"==== retrieving cached response from {cached_response_path}")
         with open(cached_response_path, 'r') as f:
             response = json.loads(f.read())
     else:
-        utils.eprint(f"==== {cached_response_path} did not exist. Submitting to OpenAI...")
+        utils.eprint(
+            f"==== {cached_response_path} did not exist. Submitting to OpenAI...")
         response = openai.ChatCompletion.create(
             model=model,
             messages=messages,

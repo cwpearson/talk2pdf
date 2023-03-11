@@ -8,11 +8,11 @@ import argparse
 import openai
 from pydub import AudioSegment, silence
 
-import utils
-import config
-import openai_cache
-import ffmpeg
-import ytdlp
+import talk2pdf.utils as utils
+import talk2pdf.config as config
+import talk2pdf.openai_cache as openai_cache
+import talk2pdf.ffmpeg as ffmpeg
+import talk2pdf.ytdlp as ytdlp
 
 
 openai.api_key = config.openapi_secret()
@@ -298,7 +298,8 @@ if __name__ == "__main__":
     )
 
     parser.add_argument('URI', help="A video file or URL")
-    parser.add_argument('-t', '--title', help="The title to use in the output PDF")
+    parser.add_argument(
+        '-t', '--title', help="The title to use in the output PDF")
 
     args = parser.parse_args()
 

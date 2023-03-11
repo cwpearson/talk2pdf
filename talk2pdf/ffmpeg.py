@@ -1,11 +1,13 @@
 import subprocess
 import hashlib
 
-import utils
+import talk2pdf.utils as utils
+
 
 def is_available():
     cp = subprocess.run(["ffmpeg", "--help"], capture_output=True)
     return cp.returncode == 0
+
 
 def extract_frame(output_dir, video_path, when_seconds):
     hh, when_seconds = divmod(when_seconds, 3600)
