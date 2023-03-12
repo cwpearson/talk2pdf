@@ -5,15 +5,19 @@ from pathlib import Path
 import argparse
 import hashlib
 import struct
+import difflib
+from collections import namedtuple
 
 from pydub import AudioSegment, silence
 
 import talk2pdf.utils as utils
 import talk2pdf.config as config
-import talk2pdf.openai_cache as openai_cache
-import talk2pdf.ffmpeg as ffmpeg
+import talk2pdf.t2p_openai as t2p_openai
+import talk2pdf.t2p_whisper as t2p_whisper
+import talk2pdf.t2p_ffmpeg as t2p_ffmpeg
 import talk2pdf.ytdlp as ytdlp
 
+Block = namedtuple("Block", ["text", "when", "image_path"])
 
 TODAY_STRING = datetime.today().strftime('%b %d, %Y')
 CHATGPT_MAX_STRING_LEN = 3000
@@ -110,9 +114,10 @@ def _transcribe_files(paths, at_sandia):
     for path in paths:
 
         utils.eprint(f"==== transcribe {path}")
-        if at_sandia:
-            utils.set_requests_ca_bundle()
-        transcript = openai_cache.transcribe(path)
+        # if at_sandia:
+        #     utils.set_requests_ca_bundle()
+        # transcript = t2p_openai.transcribe(path)
+        transcript = t2p_whisper.transcribe(path)
 
         transcripts += [transcript]
 
@@ -145,7 +150,7 @@ def _clean_texts(texts, at_sandia):
 
         if at_sandia:
             utils.set_requests_ca_bundle()
-        cleans += [openai_cache.clean(text)]
+        cleans += [t2p_openai.clean(text)]
     return cleans
 
 
@@ -159,7 +164,7 @@ def _do_video_file(video_path, title, at_sandia, url=None):
     utils.eprint(f"==== video digest: {video_digest}")
 
     audio_path = config.cache_dir() / f"{video_digest}.mp3"
-    ffmpeg.extract_audio(audio_path, video_path)
+    t2p_ffmpeg.extract_audio(audio_path, video_path)
 
     utils.eprint(f"==== load {audio_path}")
     if audio_path.suffix == ".mp3":
@@ -206,65 +211,79 @@ def _do_video_file(video_path, title, at_sandia, url=None):
 
     clean_chunks = _clean_texts(chunks, at_sandia)
 
-    paragraphs = ("\n\n".join(clean_chunks)).split("\n\n")
-    utils.eprint(f'==== {len(paragraphs)} paragraphs')
+    # each chunk may have multiple paragraphs in it
+    blocks = []
+    for chunk in clean_chunks:
+        for paragraph in chunk.split("\n\n"):
+            blocks += [Block(paragraph, None, None)]
 
+    utils.eprint(f'==== {len(blocks)} blocks')
+
+    # Find a timestamp for the beginning of each paragraph
+    # Do this by comparing the beginning of the paragraph to each segment
+    # When we find the matching segment, we have a timestamp for the beginning of the paragraph
     later_than = -1
-    rows = []
-
-    for p in paragraphs:
+    blocks_with_starts = []
+    for block in blocks:
 
         # find the first segment after no_earlier_than which matches the paragraph
         found = False
         for seg in full_transcript["segments"]:
             if seg["start"] < later_than:
                 continue
-            if p.find(seg["text"]) != -1:
+
+            # compare the beginning of p and seg["text"],
+            # consider seg["text"] to be the beginning of p if the match is close
+
+            s = difflib.SequenceMatcher(
+                lambda c: 0, block.text[:len(seg["text"])], seg["text"])
+            if s.ratio() > 0.8:
                 when = float(seg["start"])
                 later_than = when
                 utils.eprint(
-                    f'======== found "{p[:30]}..." at {when:.2f}s')
-                rows += [(p, when, None)]
+                    f'======== matched "{block.text[:25]}... to {seg["text"][:25]}..." at {when:.2f}s (score={s.ratio():.2f})')
+                blocks_with_starts += [Block(block.text, when, None)]
                 found = True
                 break
 
         if not found:
             # couldn't find a timestamp for this paragraph
-            rows += [(p, None, None)]
-            utils.eprint(f"======== WARN: couldn't find any segments in {p}!")
+            blocks_with_starts += [Block(block.text, None, None)]
+            utils.eprint(
+                f"======== WARN: couldn't find any segments in {block.text}!")
             sys.exit(1)
 
     md_path = config.cache_dir() / f"{video_digest}.md"
     pdf_path = f"{video_digest}.pdf"
 
-    for ri, row in enumerate(rows):
+    blocks_with_images = []
+    for bi, block in enumerate(blocks_with_starts):
 
-        if row[1] is not None:  # there is a timestamp for this row, so we can extract an image
-            frame_path = ffmpeg.extract_frame(
-                config.cache_dir(), video_path, row[1])
+        # This block has a time, so extract an image
+        if block.when is not None:
+            frame_path = t2p_ffmpeg.extract_frame(
+                config.cache_dir(), video_path, block.when)
 
-            if ri != 0:
-                # compare with previous image
-
-                for pi in range(ri-1, -1, -1):
-                    if rows[pi][2] is not None:  # found previous image
-                        if not utils.is_same_image(frame_path, rows[pi][2]):
-                            # paragraph, when, image
-                            h, s = divmod(row[1], 3600)
-                            m, s = divmod(s, 60)
-                            h = int(h)
-                            m = int(m)
-                            s = round(s)
-                            caption = f"[{h}h{m}m{s}s]({url}&t={h}h{m}m{s}s)"
-                            rows[ri] = row[0], caption, frame_path
-                            utils.eprint(
-                                f"==== image for paragraph {ri} different enough from {pi}")
-
-                        # compared with last used image, no need to go back further
-                        break
+            # only include this image if it's different enough from
+            # an image in a previous block, or it's the first block
+            if bi == 0:
+                blocks_with_images += [Block(block.text,
+                                             block.when, frame_path)]
+                recent_frame_path = frame_path
+            elif not utils.is_same_image(frame_path, recent_frame_path):
+                blocks_with_images += [
+                    Block(block.text, block.when, frame_path)]
+                recent_frame_path = frame_path
+                utils.eprint(
+                    f"==== image for block {bi} is new")
             else:
-                rows[ri] = row[0], row[1], frame_path
+                # no image to include, it's the same as the most recent image
+                blocks_with_images += [block]
+        else:
+            # don't know when this block is, can't add an image
+            blocks_with_images += [block]
 
+    # write document header
     with open(md_path, 'w') as f:
 
         f.write(f"""---
@@ -294,11 +313,17 @@ output: pdf_document
 ---
 """)
 
-        for ri, row in enumerate(rows):
+        for block in blocks_with_images:
 
-            paragraph = row[0]
-            caption = row[1]
-            frame_path = row[2]
+            if block.when is None:
+                caption = ""
+            else:
+                hh, ss = divmod(block.when, 3600)
+                mm, ss = divmod(ss, 60)
+                hh = int(hh)
+                mm = int(mm)
+                ss = int(ss)
+                caption = f"[{hh}h{mm}m{ss}s]({url}&t={hh}h{mm}m{ss}s)"
 
             if frame_path is not None:
                 f.write(r"""```{=latex}
@@ -313,7 +338,7 @@ output: pdf_document
 ```
 """)
                 f.write("\n\n")
-            f.write(paragraph)
+            f.write(block.text)
             f.write("\n\n")
 
     # cmd = ['pandoc', '-f', 'markdown-implicit_figures',
