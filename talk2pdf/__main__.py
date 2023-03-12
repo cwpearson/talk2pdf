@@ -7,6 +7,7 @@ import hashlib
 import struct
 import difflib
 from collections import namedtuple
+import json
 
 from pydub import AudioSegment, silence
 
@@ -25,7 +26,7 @@ OPENAI_AUDIO_LIMIT_BYTES = 1024 * 1024 * 25
 
 
 def _chunk_path(digest, i):
-    return config.cache_dir() / f"{digest}-{i}.mp3"
+    return config.get(config.KEY_CACHE_DIR) / f"{digest}-{i}.mp3"
 
 
 def _detect_noise_with_backoff(audio, max_span_length):
@@ -99,7 +100,7 @@ def _export_spans(audio, spans, seed):
         h.update(seed.encode('utf-8'))
         h.update(bytearray(struct.pack("f", span[0])))
         h.update(bytearray(struct.pack("f", span[1])))
-        path = config.cache_dir() / (h.hexdigest() + ".mp3")
+        path = config.get(config.KEY_CACHE_DIR) / (h.hexdigest() + ".mp3")
 
         if not path.is_file():
             utils.eprint(f"==== write {path} for {span[0],span[1]}")
@@ -114,11 +115,16 @@ def _transcribe_files(paths, at_sandia):
     for path in paths:
 
         utils.eprint(f"==== transcribe {path}")
-        # if at_sandia:
-        #     utils.set_requests_ca_bundle()
-        # transcript = t2p_openai.transcribe(path)
-        transcript = t2p_whisper.transcribe(path)
 
+        method = config.get(config.KEY_TRANSCRIBE)
+        if method == config.TRANSCRIBE_OPENAI_WHISPER:
+            transcript = t2p_whisper.transcribe(path)
+        elif method == config.TRANSCRIBE_OPENAI:
+            if at_sandia:
+                utils.set_requests_ca_bundle()
+            transcript = t2p_openai.transcribe(path)
+        else:
+            raise RuntimeError(f"unsupported transcribe method {method}")
         transcripts += [transcript]
 
     return transcripts
@@ -156,14 +162,13 @@ def _clean_texts(texts, at_sandia):
 
 def _do_video_file(video_path, title, at_sandia, url=None):
 
-    utils.eprint(config.as_json(show_secrets=True))
     utils.eprint(
         f"==== cache dir size is {config.cache_dir_size() / 1024 / 1024:.2f} MiB")
 
     video_digest = utils.hash_file(video_path)
     utils.eprint(f"==== video digest: {video_digest}")
 
-    audio_path = config.cache_dir() / f"{video_digest}.mp3"
+    audio_path = config.get(config.KEY_CACHE_DIR) / f"{video_digest}.mp3"
     t2p_ffmpeg.extract_audio(audio_path, video_path)
 
     utils.eprint(f"==== load {audio_path}")
@@ -253,7 +258,7 @@ def _do_video_file(video_path, title, at_sandia, url=None):
                 f"======== WARN: couldn't find any segments in {block.text}!")
             sys.exit(1)
 
-    md_path = config.cache_dir() / f"{video_digest}.md"
+    md_path = config.get(config.KEY_CACHE_DIR) / f"{video_digest}.md"
     pdf_path = f"{video_digest}.pdf"
 
     blocks_with_images = []
@@ -262,7 +267,7 @@ def _do_video_file(video_path, title, at_sandia, url=None):
         # This block has a time, so extract an image
         if block.when is not None:
             frame_path = t2p_ffmpeg.extract_frame(
-                config.cache_dir(), video_path, block.when)
+                config.get(config.KEY_CACHE_DIR), video_path, block.when)
 
             # only include this image if it's different enough from
             # an image in a previous block, or it's the first block
@@ -355,10 +360,11 @@ def _do_youtube(url):
     title = ytdlp.get_title(url)
     utils.eprint(f"==== title is {title}")
 
-    utils.eprint(f"==== ensure {config.cache_dir()}")
-    config.cache_dir().mkdir(parents=True, exist_ok=True)
+    cache_dir = config.get(config.KEY_CACHE_DIR)
+    utils.eprint(f"==== ensure {cache_dir}")
+    cache_dir.mkdir(parents=True, exist_ok=True)
 
-    video_path = ytdlp.download(url, config.cache_dir())
+    video_path = ytdlp.download(url, cache_dir)
     _do_video_file(video_path, title, utils.at_sandia(), url=url)
 
 
@@ -375,6 +381,13 @@ if __name__ == "__main__":
         '-t', '--title', help="The title to use in the output PDF")
 
     args = parser.parse_args()
+    config.load()
+
+    if not config.config_file().is_file():
+        utils.eprint(f"==== writing default config to {config.config_file()}")
+        config.config_dir().mkdir(parents=True, exist_ok=True)
+        with open(config.config_file(), 'w') as f:
+            f.write(json.dumps(config.default_config()))
 
     if not args.title:
         title = f'talk2pdf transcription of {args.URI}'

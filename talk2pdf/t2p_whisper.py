@@ -23,7 +23,7 @@ def transcribe(path):
         h.update(f.read())
     digest = h.hexdigest()
 
-    cache_path = config.cache_dir() / f"{digest}.json"
+    cache_path = config.get(config.KEY_CACHE_DIR) / f"{digest}.json"
 
     if cache_path.is_file():
         utils.eprint(f"==== reading cached {cache_path}")
