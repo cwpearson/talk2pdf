@@ -5,3 +5,4 @@ dist
 *.egg-info
 **/.DS_Store
 .python-version
+**/__pycache__
