@@ -14,7 +14,7 @@ dependencies = [
   "openai-whisper",
 ]
 name = "talk2pdf"
-version = "0.2.3"
+version = "0.3.0"
 
 classifiers = [
   "Programming Language :: Python :: 3",
