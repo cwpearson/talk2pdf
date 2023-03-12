@@ -79,6 +79,7 @@ python -m talk2pdf ...
 
 ```
 pip install --upgrade build twine
+rm -rf dist
 python -m build
 python3 -m twine upload dist/*
 ```
